@@ -1,11 +1,41 @@
 MEGAMEKLAB VERSION HISTORY:
 ----------------
-0.49.19-SNAPSHOT
+0.49.20-SNAPSHOT
++ PR #1486: Code internals: DialogOptionsListener update
++ Fix #1494: Heavy gauss rifles can no longer be mounted in mek turrets
++ Fix #1490: Upon saving a unit that was loaded from file, MML will now always ask for a new filename when that unit's name is changed
++ Fix #1497: BA Partial Wing bonus tooltip incorrectly listed +2 instead of +1
++ PR #1507: Fix missing Fighter Return Table column header in CF sheets
+
+0.49.19 (2024-04-19 2030 UTC)
 + Fix MML#1430: Fixes issue with SV armor weight and space calculations
 + Fix MML#1429: Fixes a bug with aero construction in MML
 + Fix #1242: Fixes a bug with determining the maximum number of bay doors
 + PR #1435: Code cleanup (Dependencies)
 + PR #1437: Fixes a bug that would load the Mek UI for ASF units
++ Fix #269: Setting a fluff image for a unit is now done in the fluff tab; MML will embed a chosen image in the unit file; the original image is no longer required for the unit fluff to show in MM / MML / MHQ
++ PR #1444, #1450: MML now shows the unit icon a unit will be using in MM/MHQ and allows choosing an icon. A manually chosen icon will be embedded in the unit file so that the unit is fully portable
++ PR #1455: The MML unit selector now shows the unit icon
++ Fix #1283: Columns for MGA and streak weapons have been added to the cluster hits table on record sheets
++ Fix #1440: Fixes a bug with placing industrial armor on a Mek
++ PR #1441: Java LookAndFeels choices have been restricted to FlatLaf and the system default; the default is now FlatLaf Darcula
++ Fix #1439: Battle armour weight calculation only counts one point of armour
++ Fix #1432: Selecting year during infantry creation defaults primary weapon to auto-rifle.
++ Fix #1304: Fixes a bug with loading ProtoMek ammo
++ Fix #1303: Clan internal structure on superheavy Meks now correctly uses a reduced number of slots
++ Fix #1307: Improves Targeting Computer placement
++ PR #1447: Manual Pagebreaks can now be added in the print queue
++ PR #1451: Add a button to the fluff tab to remove an embedded fluff image
++ PR #1457: Print queue interface improvements 
++ PR #1462: When printing from MUL, calculate BV from C3/Tag 
++ Fix #1306: BA manipulator will no longer stack up during construction
++ PR #1465: With the setting 'Use game year' enabled, that year is used in the unit selector to determine the tech level
++ Fix #1466: Field Guns available as Standard Tech Level
++ Fix #1343: Match critical slot sort order to specification
++ PR #1473: MML portion of fix for MHQ 3803: Fixed WOB.pm/PM mismatch 
++ Fix #1315: Industrial tripod cockpit fixes
++ Fix MM #5252: critical assignment tab eq list missing keywords like "Ammo" and "[Half]" or "[Full]"
++ PR #1478: Show a warning when attempting to print the invalid current unit 
 
 0.49.18 (2024-02-17 1800 UTC)
 + Fix #1370: Closing a unit selection dialog without selecting a unit no longer leads to an error message displayed

@@ -19,6 +19,7 @@
 package megameklab.ui.generalUnit;
 
 import megamek.common.*;
+import megamek.common.equipment.MiscMounted;
 import megamek.common.verifier.TestBattleArmor;
 import megamek.common.verifier.TestEntity;
 import megamek.common.verifier.TestMech;
@@ -38,7 +39,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Controls for setting a unit's speed
- * 
+ *
  * @author Neoancient
  */
 public class MovementView extends BuildView implements ActionListener, ChangeListener {
@@ -49,7 +50,7 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
     public void removeListener(BuildListener l) {
         listeners.remove(l);
     }
-    
+
     private final static int LABEL_INDEX_MEK  = 0;
     private final static int LABEL_INDEX_TANK = 1;
     private final static int LABEL_INDEX_AERO = 2;
@@ -61,38 +62,38 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
     private final JSpinner spnJump = new JSpinner(spnJumpModel);
     private final TechComboBox<EquipmentType> cbJumpType =
                 new TechComboBox<>(eq -> eq.getName().replaceAll("\\s+\\[.*?]",  ""));
-    
+
     private final JLabel lblWalk = createLabel("lblWalk", "", labelSize);
     private final JLabel lblRun = createLabel("lblRun", "", labelSize);
     private final JLabel lblJump = createLabel("lblJump", "", labelSize);
     private final JLabel lblJumpType = createLabel("lblJumpType", "", labelSize);
-    
+
     private final JTextField txtRunBase = new JTextField();
     private final JTextField txtWalkFinal = new JTextField();
     private final JTextField txtRunFinal = new JTextField();
     private final JTextField txtJumpFinal = new JTextField();
-    
+
     private final ITechManager techManager;
     private long etype;
     private boolean industrial;
     private String[] walkNames;
     private String[] runNames;
     private String[] jumpNames;
-    
+
     public MovementView(ITechManager techManager) {
         this.techManager = techManager;
         initUI();
     }
-    
+
     private void initUI() {
         ResourceBundle resourceMap = ResourceBundle.getBundle("megameklab.resources.Views");
         walkNames = resourceMap.getString("MovementView.lblWalk.values").split(",");
         runNames = resourceMap.getString("MovementView.lblRun.values").split(",");
         jumpNames = resourceMap.getString("MovementView.lblJump.values").split(",");
-        
+
         setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        
+
         gbc.gridx = 1;
         gbc.gridy = 0;
         gbc.gridwidth = 1;
@@ -118,7 +119,7 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
         txtWalkFinal.setToolTipText(resourceMap.getString("MovementView.txtWalkFinal.tooltip"));
         add(txtWalkFinal, gbc);
         spnWalk.addChangeListener(this);
-        
+
         gbc.gridx = 0;
         gbc.gridy = 2;
         add(lblRun, gbc);
@@ -131,7 +132,7 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
         gbc.fill = GridBagConstraints.NONE;
         txtRunFinal.setToolTipText(resourceMap.getString("MovementView.txtRunFinal.tooltip"));
         add(txtRunFinal, gbc);
-        
+
         gbc.gridx = 0;
         gbc.gridy = 3;
         add(lblJump, gbc);
@@ -145,7 +146,7 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
         txtJumpFinal.setToolTipText(resourceMap.getString("MovementView.txtJumpFinal.tooltip"));
         add(txtJumpFinal, gbc);
         spnJump.addChangeListener(this);
-        
+
         lblJumpType.setText(resourceMap.getString("MovementView.cbJumpType.text"));
         cbJumpType.setNullValue(resourceMap.getString("MovementView.cbJumpType.null"));
         gbc.gridx = 0;
@@ -173,13 +174,13 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
         txtJumpFinal.setEditable(false);
         txtJumpFinal.setHorizontalAlignment(SwingConstants.RIGHT);
     }
-    
+
     public void setFromEntity(Entity en) {
         etype = en.getEntityType();
         industrial = (en instanceof Mech) && ((Mech) en).isIndustrial();
         refresh();
 
-        Optional<EquipmentType> jj = en.getMisc().stream().map(Mounted::getType)
+        Optional<MiscType> jj = en.getMisc().stream().map(Mounted::getType)
                 .filter(eq -> eq.hasFlag(MiscType.F_JUMP_JET) || eq.hasFlag(MiscType.F_UMU)
                         || eq.hasFlag(MiscType.F_JUMP_BOOSTER)).findAny();
         if (jj.isPresent()) {
@@ -289,9 +290,9 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
         spnJump.setValue(Math.max(minJump, jump0));
         txtJumpFinal.setText(String.valueOf(jump));
         spnJump.addChangeListener(this);
-        
+
         setMovementModToolTips(en);
-        
+
         lblWalk.setText(walkNames[labelIndex]);
         lblRun.setText(runNames[labelIndex]);
         lblRun.setVisible(showRun);
@@ -305,14 +306,14 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
         cbJumpType.setVisible(showJumpType);
         spnJump.setEnabled((null == maxJump) || (maxJump > 0));
         cbJumpType.setEnabled((null == maxJump) || (maxJump > 0));
-        
+
         if ((maxJump != null) && (jump0 > maxJump)) {
             spnJump.setValue(spnJumpModel.getMaximum());
         } else if (jump0 < minJump) {
             spnJump.setValue(spnJumpModel.getMinimum());
         }
     }
-    
+
     public void refresh() {
         if (cbJumpType.isVisible()) {
             EquipmentType prev = (EquipmentType) cbJumpType.getSelectedItem();
@@ -338,12 +339,12 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
             }
         }
     }
-    
+
     private void setMovementModToolTips(Entity en) {
         StringJoiner walkTooltip = new StringJoiner(", ");
         StringJoiner runTooltip = new StringJoiner(", ");
         StringJoiner jumpTooltip = new StringJoiner(", ");
-        
+
         if (en.hasModularArmor()) {
             walkTooltip.add("-1 (Modular armor)");
             jumpTooltip.add("-1 (Modular armor)");
@@ -384,12 +385,14 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
         } else if (en.hasWorkingMisc(MiscType.F_JET_BOOSTER)) {
             runTooltip.add("Jet Booster");
         }
-        Optional<Mounted> partialWing = en.getMisc().stream()
+        Optional<MiscMounted> partialWing = en.getMisc().stream()
                 .filter(m -> m.getType().hasFlag(MiscType.F_PARTIAL_WING)).findAny();
         if (partialWing.isPresent()) {
             int bonus = 2;
             if (en instanceof Mech) {
                 bonus = ((Mech) en).getPartialWingJumpBonus(partialWing.get());
+            } else if (en instanceof BattleArmor) {
+                bonus = 1;
             }
             jumpTooltip.add(String.format("+%d (Partial wing)", bonus));
         }
@@ -398,19 +401,19 @@ public class MovementView extends BuildView implements ActionListener, ChangeLis
         txtJumpFinal.setToolTipText(((jumpTooltip.length() > 0) && (en.getOriginalJumpMP(false) > 0))
                 ? jumpTooltip.toString() : null);
     }
-    
+
     public int getWalk() {
         return spnWalkModel.getNumber().intValue();
     }
-    
+
     public int getJump() {
         return spnJumpModel.getNumber().intValue();
     }
-    
+
     public EquipmentType getJumpJet() {
         return (EquipmentType)cbJumpType.getSelectedItem();
     }
-    
+
     @Override
     public void stateChanged(ChangeEvent e) {
         if (e.getSource() == spnWalk) {

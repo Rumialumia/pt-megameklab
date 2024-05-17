@@ -17,6 +17,7 @@ import megamek.codeUtilities.MathUtility;
 import megamek.common.*;
 import megamek.common.annotations.Nullable;
 import megamek.common.equipment.ArmorType;
+import megamek.common.equipment.MiscMounted;
 import megamek.common.loaders.EntityLoadingException;
 import megamek.common.verifier.TestEntity;
 import megameklab.ui.EntitySource;
@@ -48,6 +49,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
     private HeatSinkView panHeat;
     private ArmorAllocationView panArmorAllocation;
     private PatchworkArmorView panPatchwork;
+    private IconView iconView;
 
     RefreshListener refresh = null;
 
@@ -67,6 +69,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
         panLAMFuel = new BMLAMFuelView(eSource);
         panArmorAllocation = new ArmorAllocationView(panBasicInfo, Entity.ETYPE_MECH);
         panPatchwork = new PatchworkArmorView(panBasicInfo);
+        iconView = new IconView();
         panSummary = new SummaryView(eSource,
                 new UnitTypeSummaryItem(),
                 new StructureSummaryItem(),
@@ -93,6 +96,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
         panHeat.setFromMech(getMech());
         panArmorAllocation.setFromEntity(getMech());
         panPatchwork.setFromEntity(getMech());
+        iconView.setFromEntity(getMech());
 
         JPanel leftPanel = new JPanel();
         JPanel centerPanel = new JPanel();
@@ -103,22 +107,24 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
 
         leftPanel.add(panBasicInfo);
         leftPanel.add(Box.createVerticalStrut(11));
+        leftPanel.add(iconView);
+        leftPanel.add(Box.createVerticalStrut(11));
         leftPanel.add(panChassis);
-        leftPanel.add(Box.createVerticalStrut(11));
-        leftPanel.add(panHeat);
-        leftPanel.add(Box.createGlue());
+        leftPanel.add(Box.createVerticalGlue());
 
+        centerPanel.add(panHeat);
+        centerPanel.add(Box.createVerticalStrut(11));
         centerPanel.add(panMovement);
-        leftPanel.add(Box.createVerticalStrut(11));
+        centerPanel.add(Box.createVerticalStrut(11));
         centerPanel.add(panLAMFuel);
-        leftPanel.add(Box.createVerticalStrut(11));
+        centerPanel.add(Box.createVerticalStrut(11));
         centerPanel.add(panSummary);
         centerPanel.add(Box.createVerticalGlue());
 
         rightPanel.add(panArmor);
-        leftPanel.add(Box.createVerticalStrut(11));
+        rightPanel.add(Box.createVerticalStrut(11));
         rightPanel.add(panArmorAllocation);
-        leftPanel.add(Box.createVerticalStrut(11));
+        rightPanel.add(Box.createVerticalStrut(11));
         rightPanel.add(panPatchwork);
         rightPanel.add(Box.createVerticalGlue());
 
@@ -157,6 +163,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
         panLAMFuel.setFromEntity(getMech());
         panLAMFuel.setVisible(getMech() instanceof LandAirMech);
         panSummary.refresh();
+        iconView.setFromEntity(getMech());
         addAllListeners();
     }
 
@@ -306,8 +313,12 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
                 break;
             default:
                 clearCritsForCockpit(false, false);
+                int cockpitType = getMech().getCockpitType();
                 getMech().addCockpit();
+                // addCockpit sets the criticals but also sets the type to the default.
+                getMech().setCockpitType(cockpitType);
         }
+
         // For LAMs we want to put the landing gear in the first available slot after the engine and gyro.
         if (getMech().hasETypeFlag(Entity.ETYPE_LAND_AIR_MECH)) {
             int lgSlot = 10;
@@ -433,7 +444,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
         for (; isCount > 0; isCount--) {
             try {
                 getMech().addEquipment(
-                        new Mounted(getMech(), structure),
+                        Mounted.createMounted(getMech(), structure),
                         Entity.LOC_NONE, false);
             } catch (Exception ex) {
                 LogManager.getLogger().error("", ex);
@@ -502,8 +513,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
     private void createArmorMountsAndSetArmorType(int at, int aTechLevel) {
         getMech().setArmorTechLevel(aTechLevel);
         getMech().setArmorType(at);
-        final EquipmentType armor = EquipmentType.get(EquipmentType.getArmorTypeName(at,
-                TechConstants.isClan(aTechLevel)));
+        final EquipmentType armor = ArmorType.of(at, TechConstants.isClan(aTechLevel));
         int armorCount = armor.getCriticals(getMech());
 
         if (armorCount < 1) {
@@ -527,7 +537,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
         } else {
             for (; armorCount > 0; armorCount--) {
                 try {
-                    getMech().addEquipment(new Mounted(getMech(), armor), Entity.LOC_NONE, false);
+                    getMech().addEquipment(Mounted.createMounted(getMech(), armor), Entity.LOC_NONE, false);
                 } catch (Exception ignored) {
                 }
             }
@@ -549,6 +559,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
         getMech().setChassis(chassis);
         refresh.refreshHeader();
         refresh.refreshPreview();
+        iconView.refresh();
     }
 
     @Override
@@ -556,6 +567,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
         getMech().setClanChassisName(clanName);
         refresh.refreshHeader();
         refresh.refreshPreview();
+        iconView.refresh();
     }
 
     @Override
@@ -563,6 +575,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
         getMech().setModel(model);
         refresh.refreshHeader();
         refresh.refreshPreview();
+        iconView.refresh();
     }
 
     @Override
@@ -674,8 +687,22 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
             }
             if (tonnage > 100) {
                 getMech().setGyroType(Mech.GYRO_SUPERHEAVY);
+                if (getMech().isTripodMek()) {
+                    cockpitChanged(getMech().hasAdvancedFireControl() ?
+                            Mech.COCKPIT_SUPERHEAVY_TRIPOD : Mech.COCKPIT_SUPERHEAVY_TRIPOD_INDUSTRIAL);
+                } else {
+                    cockpitChanged(getMech().hasAdvancedFireControl() ?
+                            Mech.COCKPIT_SUPERHEAVY : Mech.COCKPIT_SUPERHEAVY_INDUSTRIAL);
+                }
             } else {
                 getMech().setGyroType(Mech.GYRO_STANDARD);
+                if (getMech().isTripodMek()) {
+                    cockpitChanged(getMech().hasAdvancedFireControl() ?
+                            Mech.COCKPIT_TRIPOD : Mech.COCKPIT_TRIPOD_INDUSTRIAL);
+                } else {
+                    cockpitChanged(getMech().hasAdvancedFireControl() ?
+                            Mech.COCKPIT_STANDARD : Mech.COCKPIT_INDUSTRIAL);
+                }
             }
         }
         getMech().setWeight(tonnage);
@@ -743,7 +770,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
             case BMChassisView.BASE_TYPE_QUADVEE:
                 if (getMech() instanceof QuadVee) {
                     if (motiveType != ((QuadVee)getMech()).getMotiveType()) {
-                        Optional<Mounted> mount = getMech().getMisc().stream()
+                        Optional<MiscMounted> mount = getMech().getMisc().stream()
                                 .filter(m -> m.getType().hasFlag(MiscType.F_TRACKS))
                                 .findAny();
                         mount.ifPresent(mounted -> UnitUtil.removeMounted(getMech(), mounted));
@@ -862,7 +889,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
         MekUtil.removeEnhancements(getMech());
         if (null != enhancement) {
             if (enhancement.hasFlag(MiscType.F_MASC)) {
-                Mounted mount = new Mounted(getMech(), enhancement);
+                Mounted mount = Mounted.createMounted(getMech(), enhancement);
                 try {
                     getMech().addEquipment(mount, Entity.LOC_NONE, false);
                 } catch (LocationFullException lfe) {
@@ -1071,7 +1098,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
                 }
                 while (jumpMP > jjs.size()) {
                     try {
-                        UnitUtil.addMounted(getMech(), new Mounted(getMech(), jumpJet), Entity.LOC_NONE, false);
+                        UnitUtil.addMounted(getMech(), Mounted.createMounted(getMech(), jumpJet), Entity.LOC_NONE, false);
                     } catch (LocationFullException ignored) {
                         // Adding to LOC_NONE
                     }
@@ -1330,7 +1357,7 @@ public class BMStructureTab extends ITab implements MekBuildListener, ArmorAlloc
             getMech().setArmorTechLevel(armor.getTechLevel(getTechManager().getGameYear(), armor.isClan()));
             for (; crits > 0; crits--) {
                 try {
-                    getMech().addEquipment( new Mounted(getMech(), armor), location, false);
+                    getMech().addEquipment( Mounted.createMounted(getMech(), armor), location, false);
                 } catch (LocationFullException ignored) {
 
                 }

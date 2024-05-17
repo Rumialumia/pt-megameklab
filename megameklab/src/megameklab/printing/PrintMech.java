@@ -16,9 +16,9 @@ package megameklab.printing;
 import megamek.common.Entity;
 import megamek.common.*;
 import megamek.common.annotations.Nullable;
+import megamek.common.equipment.MiscMounted;
 import megameklab.printing.reference.*;
 import megameklab.util.CConfig;
-import megameklab.util.ImageHelper;
 import megameklab.util.RSScale;
 import megameklab.util.UnitUtil;
 import org.apache.batik.anim.dom.SVGDOMImplementation;
@@ -160,8 +160,8 @@ public class PrintMech extends PrintEntity {
     }
     
     private void printShields() {
-        for (Mounted m : mech.getMisc()) {
-            if (((MiscType) m.getType()).isShield()) {
+        for (MiscMounted m : mech.getMisc()) {
+            if (m.getType().isShield()) {
                 String loc = mech.getLocationAbbr(m.getLocation());
                 Element element = getSVGDocument().getElementById(ARMOR_DIAGRAM + loc);
                 if (null != element) {
@@ -540,7 +540,7 @@ public class PrintMech extends PrintEntity {
                 placeReferenceCharts(tables, rect.getParentNode(), bbox.getX(), bbox.getY(),
                         bbox.getWidth() + 6.0, bbox.getHeight() + 6.0);
             } else {
-                embedImage(ImageHelper.getFluffFile(mech),
+                embedImage(getFluffImage(),
                         (Element) rect.getParentNode(), getRectBBox((SVGRectElement) rect), true);
             }
         }
@@ -703,7 +703,7 @@ public class PrintMech extends PrintEntity {
                         || ((cs.getIndex() >= Mech.ACTUATOR_UPPER_LEG) && (cs.getIndex() <= Mech.ACTUATOR_FOOT))) {
                     name += " Actuator";
                 } else if (cs.getIndex() == Mech.SYSTEM_COCKPIT) {
-                    Optional<Mounted> robotics = mech.getMisc().stream()
+                    Optional<MiscMounted> robotics = mech.getMisc().stream()
                             .filter(m -> m.getType().hasFlag(MiscType.F_SRCS)).findAny();
                     if (robotics.isPresent()) {
                         name = robotics.get().getType().getShortName();

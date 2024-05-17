@@ -19,10 +19,12 @@
 package megameklab.util;
 
 import megamek.common.*;
+import megamek.common.equipment.MiscMounted;
 import megamek.common.weapons.c3.ISC3M;
 import megamek.common.weapons.c3.ISC3MBS;
 import megamek.common.weapons.infantry.InfantryWeapon;
 import megamek.common.weapons.other.*;
+import megamek.common.weapons.ppc.CLPlasmaCannon;
 import megamek.common.weapons.tag.CLLightTAG;
 import megamek.common.weapons.tag.CLTAG;
 import megamek.common.weapons.tag.ISTAG;
@@ -71,13 +73,13 @@ public final class MekUtil {
      * @param unit
      */
     public static void removeHeatSinks(Mech unit, int number) {
-        Vector<Mounted> toRemove = new Vector<>();
+        Vector<Mounted<?>> toRemove = new Vector<>();
         int base = UnitUtil.getCriticalFreeHeatSinks(unit, unit.hasCompactHeatSinks());
         boolean splitCompact = false;
         if (unit.hasCompactHeatSinks()) {
             // first check to see if there is a single compact heat sink outside of the engine and
             // remove this first if so
-            Mounted mount = getSingleCompactHeatSink(unit);
+            Mounted<?> mount = getSingleCompactHeatSink(unit);
             if ((null != mount) && (number > 0)) {
                 UnitUtil.removeMounted(unit, mount);
                 number--;
@@ -88,10 +90,10 @@ public final class MekUtil {
                 number--;
             }
         }
-        Vector<Mounted> unassigned = new Vector<>();
-        Vector<Mounted> assigned = new Vector<>();
-        Vector<Mounted> free = new Vector<>();
-        for (Mounted m : unit.getMisc()) {
+        Vector<Mounted<?>> unassigned = new Vector<>();
+        Vector<Mounted<?>> assigned = new Vector<>();
+        Vector<Mounted<?>> free = new Vector<>();
+        for (Mounted<?> m : unit.getMisc()) {
             if (UnitUtil.isHeatSink(m)) {
                 if (m.getLocation() == Entity.LOC_NONE) {
                     if (base > 0) {
@@ -130,7 +132,7 @@ public final class MekUtil {
             if (!eq.getType().hasFlag(MiscType.F_HEAT_SINK)) {
                 try {
                     UnitUtil.addMounted(unit,
-                            new Mounted(unit, EquipmentType.get("IS1 Compact Heat Sink")), loc, false);
+                            Mounted.createMounted(unit, EquipmentType.get("IS1 Compact Heat Sink")), loc, false);
                 } catch (Exception ex) {
                     LogManager.getLogger().error("", ex);
                 }
@@ -162,7 +164,7 @@ public final class MekUtil {
         } else {
             for (; hsAmount > 0; hsAmount--) {
                 try {
-                    unit.addEquipment(new Mounted(unit, sinkType), Entity.LOC_NONE, false);
+                    unit.addEquipment(Mounted.createMounted(unit, sinkType), Entity.LOC_NONE, false);
                 } catch (Exception ex) {
                     LogManager.getLogger().error("", ex);
                 }
@@ -181,7 +183,7 @@ public final class MekUtil {
         if ((restHS % 2) == 1) {
             if (null == singleCompact) {
                 try {
-                    unit.addEquipment(new Mounted(unit, EquipmentType.get(EquipmentTypeLookup.COMPACT_HS_1)),
+                    unit.addEquipment(Mounted.createMounted(unit, EquipmentType.get(EquipmentTypeLookup.COMPACT_HS_1)),
                             Entity.LOC_NONE, false);
                 } catch (Exception ex) {
                     LogManager.getLogger().error("", ex);
@@ -191,7 +193,7 @@ public final class MekUtil {
                 // remove singleCompact mount and replace with a double
                 UnitUtil.removeMounted(unit, singleCompact);
                 try {
-                    UnitUtil.addMounted(unit,new Mounted(unit, EquipmentType.get(EquipmentTypeLookup.COMPACT_HS_2)),
+                    UnitUtil.addMounted(unit,Mounted.createMounted(unit, EquipmentType.get(EquipmentTypeLookup.COMPACT_HS_2)),
                             loc, false);
                 } catch (Exception ex) {
                     LogManager.getLogger().error("", ex);
@@ -201,7 +203,7 @@ public final class MekUtil {
         }
         for (; restHS > 0; restHS -= 2) {
             try {
-                unit.addEquipment(new Mounted(unit, EquipmentType.get(EquipmentTypeLookup.COMPACT_HS_2)),
+                unit.addEquipment(Mounted.createMounted(unit, EquipmentType.get(EquipmentTypeLookup.COMPACT_HS_2)),
                         Entity.LOC_NONE, false);
             } catch (Exception ex) {
                 LogManager.getLogger().error("", ex);
@@ -403,9 +405,8 @@ public final class MekUtil {
      * @param unit
      */
     public static void removeJumpJets(Mech unit, int number) {
-        Vector<Mounted> toRemove = new Vector<>();
-        ArrayList<Mounted> misceq = unit.getMisc();
-        for (Mounted eq : misceq) {
+        Vector<MiscMounted> toRemove = new Vector<>();
+        for (MiscMounted eq : unit.getMisc()) {
             if (UnitUtil.isJumpJet(eq)) {
                 toRemove.add(eq);
                 if (toRemove.size() >= number) {
@@ -414,7 +415,7 @@ public final class MekUtil {
             }
         }
 
-        for (Mounted eq : toRemove) {
+        for (MiscMounted eq : toRemove) {
             UnitUtil.removeMounted(unit, eq);
         }
     }
@@ -456,7 +457,7 @@ public final class MekUtil {
             while (jjAmount > 0) {
                 try {
                     unit.addEquipment(
-                            new Mounted(unit, EquipmentType.get(UnitUtil.getJumpJetType(jjType))),
+                            Mounted.createMounted(unit, EquipmentType.get(UnitUtil.getJumpJetType(jjType))),
                             Entity.LOC_NONE, false);
                 } catch (Exception ex) {
                     LogManager.getLogger().error("", ex);
@@ -518,20 +519,24 @@ public final class MekUtil {
                 if ((cs == null) || (cs.getType() == CriticalSlot.TYPE_SYSTEM)) {
                     continue;
                 }
-                Mounted mount = cs.getMount();
+                Mounted<?> mount = cs.getMount();
 
                 if (!UnitUtil.isFixedLocationSpreadEquipment(mount.getType())
                         && (UnitUtil.isTSM(mount.getType())
                         || UnitUtil.isArmorOrStructure(mount.getType()))) {
-                    Mounted newMount = new Mounted(unit, mount.getType());
+                    Mounted<?> newMount = Mounted.createMounted(unit, mount.getType());
                     newMount.setLocation(location, mount.isRearMounted());
                     newMount.setArmored(mount.isArmored());
                     cs.setMount(newMount);
                     cs.setArmored(mount.isArmored());
                     unit.getEquipment().remove(mount);
-                    unit.getMisc().remove(mount);
+                    if (mount instanceof MiscMounted) {
+                        unit.getMisc().remove(mount);
+                    }
                     unit.getEquipment().add(newMount);
-                    unit.getMisc().add(newMount);
+                    if (newMount instanceof MiscMounted) {
+                        unit.getMisc().add((MiscMounted) newMount);
+                    }
                 }
             }
         }
@@ -640,7 +645,7 @@ public final class MekUtil {
         }
 
         boolean firstBlock = true;
-        Mounted mount = new Mounted(unit, equip);
+        Mounted mount = Mounted.createMounted(unit, equip);
         for (; blocks > 0; blocks--) {
             // how many crits per block?
             int crits = UnitUtil.getCritsUsed(mount);
@@ -657,7 +662,7 @@ public final class MekUtil {
                             // for those, we need to create a mount for each crit,
                             // otherwise we can't correctly let the user place them
                             // luckily, that only affects TSM, so BV works out correctly
-                            mount = new Mounted(unit, equip);
+                            mount = Mounted.createMounted(unit, equip);
                         }
                     } else {
                         CriticalSlot cs = new CriticalSlot(mount);
@@ -967,8 +972,47 @@ public final class MekUtil {
     public static void sortCritSlots(Mech mek, int location) {
         List<CriticalSlot> presentGear = extricateCritSlots(mek, location);
         presentGear.sort(new MekCritSlotSorter(mek));
+        floatAmmo(presentGear);
         presentGear = reOrderLinkedEquipment(presentGear);
         refillCritSlots(mek, location, presentGear);
+    }
+
+    /**
+     * If the last weapon in the location uses ammo, floats compatible ammo above other ammo
+     * Requires the slots to have already been sorted beforehand
+     */
+    private static void floatAmmo(List<CriticalSlot> slots) {
+        WeaponType lastWeapon = null;
+        for (CriticalSlot slot : slots) {
+            if (slot.getMount().getType() instanceof WeaponType) {
+                lastWeapon = (WeaponType) slot.getMount().getType();
+            }
+        }
+        if (lastWeapon == null) {
+            return;
+        }
+
+        List<CriticalSlot> compatibleAmmo = new ArrayList<>();
+        int insertPosition = -1;
+        for (int i = 0; i < slots.size(); ++i) {
+            if (slots.get(i).getMount().getType() instanceof AmmoType) {
+                if (insertPosition < 0) {
+                    insertPosition = i;
+                }
+
+                AmmoType ammoType = (AmmoType) slots.get(i).getMount().getType();
+                if (lastWeapon.rackSize == ammoType.getRackSize() && lastWeapon.getAmmoType() == lastWeapon.getAmmoType()) {
+                    compatibleAmmo.add(slots.get(i));
+                }
+            }
+        }
+
+        if (insertPosition < 0) {
+            return;
+        }
+
+        slots.removeAll(compatibleAmmo);
+        slots.addAll(insertPosition, compatibleAmmo);
     }
 
     /**
@@ -1343,6 +1387,7 @@ public final class MekUtil {
         }
     }
 
+
     /**
      * A Mounted sorter using the official sort order (mostly)
      */
@@ -1362,10 +1407,13 @@ public final class MekUtil {
                 // compare average damage; using Aero damage here
                 double dmgA = 0;
                 double dmgB = 0;
-                if (mountedA.getType() instanceof WeaponType) {
+                // Weapons that deal heat but not damage should sort last after weapons that deal damage
+                // The only weapon I could find with positive aerospace damage but only heat damage against mechs
+                // is the plasma cannon. If others exist, this could be made to be a more comprehensive check.
+                if (mountedA.getType() instanceof WeaponType && !(mountedA.getType() instanceof CLPlasmaCannon)) {
                     dmgA = ((WeaponType) mountedA.getType()).getShortAV();
                 }
-                if (mountedB.getType() instanceof WeaponType) {
+                if (mountedB.getType() instanceof WeaponType && !(mountedB.getType() instanceof CLPlasmaCannon)) {
                     dmgB = ((WeaponType) mountedB.getType()).getShortAV();
                 }
                 if (dmgA != dmgB) {
